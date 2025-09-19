@@ -9,6 +9,9 @@ from scipy.optimize import curve_fit
 # Bibcode: 2020JPhSt..24.1902A
 # DOI: 10.30970/jps.24.1902, 10.48550/arXiv.1912.07677
 
+def printError(msg):
+    print(msg)
+
 def f_AP(t, C1, C2, C3, C4, C5):
     D = (C5 - C4) / 2; v = t - (C5 + C4) / 2
     ## ???
@@ -82,7 +85,7 @@ def approx(method, t_obs, m_obs, maxfev=12000):
         C1, C2, C3, C4, C5 = params_opt        
         if C4 < t_min or C4 > t_max or C5 > t_max or C5 > t_max:
             if method == "AP":
-                print("**** Bad C4 or C5! Trying with bounds. Error estimation is not accessible!")
+                printError("**** Bad C4 or C5! Trying with bounds. Error estimation is not accessible!")
             bounds = (
                 [ -np.inf, -np.inf, -np.inf, t_min, t_min ],  # lower bounds
                 [  np.inf,  np.inf,  np.inf, t_max, t_max ]   # upper bounds
@@ -136,11 +139,14 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
             mag_extr_var = J_m @ cov_matrix @ J_m.T
             mag_extr_sig = np.sqrt(mag_extr_var)
             
-            # if abs(C5 - C4) < time_extr_var / 10.0:
-            #     time_extr_sig = np.nan
-            #     mag_extr_sig = np.nan
+            if abs(C5 - C4) < time_extr_var:
+                # Parabolic part is shorter than the uncertainty.
+                # It seems the method is not suitable.
+                printError("**** The parabolic part is shorter than the uncertainty! Try method=A.")
+                time_extr_sig = np.nan
+                mag_extr_sig = np.nan
         else:
-            print("**** The extremum is out of the parabolic part!")
+            printError("**** The extremum is out of the parabolic part! Try another method.")
             time_of_extremum = np.nan
             time_extr_sig = np.nan
             mag_of_extremum = np.nan
