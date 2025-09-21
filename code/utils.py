@@ -2,7 +2,7 @@ import argparse
 
 def method_type(value):
     value_upper = value.upper()
-    if value_upper not in {"AP", "WSAP", "A", "0"}:
+    if value_upper not in {"AP", "WSAP", "WSAPA", "A", "0"}:
         raise argparse.ArgumentTypeError("Method must be AP, WSAP, A or 0 (case-insensitive). Use 0 to plot the data without approximation.")
     return value_upper
 
@@ -12,7 +12,7 @@ def parse_args(description):
     parser.add_argument("filename", type=str, help="Path to the input data file")
     # Optional string argument: method
     parser.add_argument('--method', type=method_type, default="AP",
-                        help="METHOD to use: AP, WSAP, or A (case-insensitive). Default: AP")
+                        help="METHOD to use: AP, WSAP, WSAPA, or A (case-insensitive). Default: AP")
     # Optional boolean argument: non-inverted Y axis
     parser.add_argument('--non-inverseY', action='store_true', default=False,
                         help='Use non-inverted Y axis')
@@ -62,12 +62,13 @@ def plot_result(t_obs, m_obs,
     
     plt.show()
 
-def save_result(method,
+def save_result(out_file,
+                method,
                 time_of_extremum, time_extr_sig,
                 mag_of_extremum, mag_extr_sig,
                 params_opt, param_errors):
     m = 0
-    with open("approx_result.txt", "w") as f:
+    with open(out_file, "w") as f:
         s = f"Method: {method}"
         print(s)
         f.write(s + "\n")
@@ -93,3 +94,10 @@ def save_result(method,
             s = f"C{m}\t{p}\t{e}"
             print(s)
             f.write(s + "\n")
+
+def save_approx(out_file,
+                t_obs, y_array_fit_at_points, m_obs):
+    with open(out_file, "w") as f:
+        for t, y, o in zip(t_obs, y_array_fit_at_points, m_obs):
+            f.write(f"{t} {y} # {o}\n")
+           

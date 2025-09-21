@@ -71,11 +71,12 @@ def process_data(data_file_name, method, inverseY=True):
     
     time_of_extremum, time_extr_sig, mag_of_extremum, mag_extr_sig = ila.method_result(method, params_opt, params_cov, min(t_obs), max(t_obs))
     
-    utils.save_result(method,
+    utils.save_result(f"approx_result-{method}.txt",
+                      method,
                       time_of_extremum, time_extr_sig,
                       mag_of_extremum, mag_extr_sig,
                       params_opt, param_errors)
-   
+    
     t_min = min(t_obs)
     t_max = max(t_obs)
     t_array = np.linspace(t_min, t_max, 10000)
@@ -87,18 +88,24 @@ def process_data(data_file_name, method, inverseY=True):
         C1, C2, C3, C4, C5, C6 = params_opt
         y_array_fit = ila.f_WSAP_a(t_array, C1, C2, C3, C4, C5, C6)
         y_array_fit_at_points = ila.f_WSAP_a(t_obs, C1, C2, C3, C4, C5, C6)
+    elif method == "WSAPA":
+        C1, C2, C3, C4, C5, C6, C7 = params_opt
+        y_array_fit = ila.f_WSAPA_a(t_array, C1, C2, C3, C4, C5, C6, C7)
+        y_array_fit_at_points = ila.f_WSAPA_a(t_obs, C1, C2, C3, C4, C5, C6, C7)
     else: #method == "A"
        C1, C2, C3, C4 = params_opt
        C5 = None
        y_array_fit = ila.f_A_a(t_array, C1, C2, C3, C4)
        y_array_fit_at_points = ila.f_A_a(t_obs, C1, C2, C3, C4)
+
+    utils.save_approx(f"approx_data-{method}.txt",
+                      t_obs, y_array_fit_at_points, m_obs)
        
-    
     print()
-    sigma = np.sqrt(np.sum((m_obs - y_array_fit_at_points)**2) / (len(m_obs)))
-    print("sigma      = ", sigma)
+    sigma = np.sqrt(np.sum((m_obs - y_array_fit_at_points)**2) / (len(m_obs) - len(params_opt)))
+    print("sigma        = ", sigma)
     sigma = np.sqrt(np.sum((m_obs - y_array_fit_at_points)**2) * len(params_opt) / len(m_obs) / (len(m_obs) - len(params_opt)))    
-    print("sigma[x_c] = ", sigma)
+    print("sigma_m[x_c] = ", sigma, " # r.m.s. accuracy of the fit")
 
     utils.plot_result(t_obs, m_obs, 
                       t_array, y_array_fit, 

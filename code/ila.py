@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 # Bibcode: 2020JPhSt..24.1902A
 # DOI: 10.30970/jps.24.1902, 10.48550/arXiv.1912.07677
 
-def printError(msg):
+def printWarning(msg):
     print(msg)
 
 def f_AP(t, C1, C2, C3, C4, C5):
@@ -48,6 +48,24 @@ def f_WSAP_a(t_a, C1, C2, C3, C4, C5, C6):
 
 ###############################################################################
 
+def f_WSAPA(t, C1, C2, C3, C4, C5, C6, C7):
+    D = (C5 - C4) / 2; v = t - (C5 + C4) / 2
+    ## ???
+    if D < 0.0:
+        return np.inf
+    #
+    if t < C4:
+        return C1 + C2 * (-2 * v - D) * D + C3 * v + C6 * abs(t - C4) ** 1.5
+    elif C4 <= t < C5:
+        return C1 + C2 * v * v + C3 * v
+    else:
+        return C1 + C2 * (2 * v - D) * D + C3 * v + C7 * abs(t - C5) ** 1.5
+        
+def f_WSAPA_a(t_a, C1, C2, C3, C4, C5, C6, C7):
+    return list(map(lambda t: f_WSAPA(t, C1, C2, C3, C4, C5, C6, C7), t_a))
+
+###############################################################################
+
 def f_A(t, C1, C2, C3, C4):
     if t < C4:
         return C1 + C2 * (t - C4)
@@ -61,8 +79,8 @@ def f_A_a(t_a, C1, C2, C3, C4):
 
 def approx(method, t_obs, m_obs, maxfev=12000):
     
-    if method != "AP" and method != "WSAP" and method != "A":
-        raise Exception("Only AP and WSAP methods are supported.")
+    if method != "AP" and method != "WSAP" and method != "WSAPA" and method != "A":
+        raise Exception("Only AP, WSAP, WSAPA, and A methods are supported.")
     
     mean_t = np.mean(t_obs)
     t_obs = t_obs - mean_t
@@ -77,15 +95,16 @@ def approx(method, t_obs, m_obs, maxfev=12000):
     C4 = t_min + (t_max - t_min) / 3.0
     C5 = t_max - (t_max - t_min) / 3.0
     C6 = 0.0
+    C7 = 0.0
 
-    if method == "AP" or method == "WSAP":
+    if method == "AP" or method == "WSAP" or method == "WSAPA":
         params_opt, params_cov = curve_fit(f_AP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
                                            # bounds=bounds,
                                            maxfev=maxfev)
         C1, C2, C3, C4, C5 = params_opt        
         if C4 < t_min or C4 > t_max or C5 > t_max or C5 > t_max:
             if method == "AP":
-                printError("**** Bad C4 or C5! Trying with bounds. Error estimation is not accessible!")
+                printWarning("**** Bad C4 or C5! Trying with bounds. Error estimation is not accessible!")
             bounds = (
                 [ -np.inf, -np.inf, -np.inf, t_min, t_min ],  # lower bounds
                 [  np.inf,  np.inf,  np.inf, t_max, t_max ]   # upper bounds
@@ -104,6 +123,12 @@ def approx(method, t_obs, m_obs, maxfev=12000):
             C1, C2, C3, C4, C5 = params_opt
             params_opt, params_cov = curve_fit(f_WSAP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5, C6],
                                                maxfev=maxfev)
+        elif method == "WSAPA":
+            # Use AP estimation as starting point
+            C1, C2, C3, C4, C5 = params_opt
+            params_opt, params_cov = curve_fit(f_WSAPA_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5, C6, C7],
+                                               maxfev=maxfev)
+            
               
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
@@ -116,10 +141,15 @@ def approx(method, t_obs, m_obs, maxfev=12000):
 
 def method_result(method, params_opt, params_cov, t_min, t_max):
 
-    if method == "AP" or method == "WSAP":
-        if len(params_opt) == 6:
-            # WSAP
-            C1, C2, C3, C4, C5, C6 = params_opt
+    if method == "AP" or method == "WSAP" or method == "WSAPA":
+        if len(params_opt) > 5:
+        # WSAP, WSAPA
+            if len(params_opt) == 6:
+                # WSAP
+                C1, C2, C3, C4, C5, C6 = params_opt
+            elif len(params_opt) == 7:
+                # WSAPA
+                C1, C2, C3, C4, C5, C6, C7 = params_opt
             cov_matrix = params_cov[:5, :5]
         else:
             # AP
@@ -139,14 +169,14 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
             mag_extr_var = J_m @ cov_matrix @ J_m.T
             mag_extr_sig = np.sqrt(mag_extr_var)
             
-            if abs(C5 - C4) < time_extr_var:
+            if abs(C5 - C4) < time_extr_sig:
                 # Parabolic part is shorter than the uncertainty.
                 # It seems the method is not suitable.
-                printError("**** The parabolic part is shorter than the uncertainty! Try method=A.")
+                printWarning("**** The parabolic part is shorter than the uncertainty! Try method=A.")
                 time_extr_sig = np.nan
                 mag_extr_sig = np.nan
         else:
-            printError("**** The extremum is out of the parabolic part! Try another method.")
+            printWarning("**** The extremum is out of the parabolic part! Try another method.")
             time_of_extremum = np.nan
             time_extr_sig = np.nan
             mag_of_extremum = np.nan
