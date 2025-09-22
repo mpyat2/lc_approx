@@ -94,22 +94,6 @@ def approx(method, t_obs, m_obs, maxfev=12000):
         params_opt, params_cov = curve_fit(f_AP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
                                            maxfev=maxfev)
         C1, C2, C3, C4, C5 = params_opt
-        if C4 < t_min or C4 > t_max or C5 > t_max or C5 > t_max:
-            if method == "AP":
-                printWarning("**** Bad C4 or C5! Trying with bounds. Error estimation is not accessible!")
-            bounds = (
-                [ -np.inf, -np.inf, -np.inf, t_min, t_min ],  # lower bounds
-                [  np.inf,  np.inf,  np.inf, t_max, t_max ]   # upper bounds
-            )
-            C1 = np.mean(m_obs)
-            C2 = 0.0
-            C3 = 0.0
-            C4 = t_min
-            C5 = t_max
-            params_opt, params_cov = curve_fit(f_AP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                               bounds=bounds,
-                                               maxfev=maxfev)
-            params_cov[:] = np.nan # if bounds used, covariance matrix may be invalid
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
     elif method == "WSAP":
