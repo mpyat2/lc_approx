@@ -90,14 +90,14 @@ def process_data(data_file_name, method, inverseY=True):
         C1, C2, C3, C4, C5 = params_opt
         y_array_fit = ila.f_AP_a(t_array, C1, C2, C3, C4, C5)
         y_array_fit_at_points = ila.f_AP_a(t_obs, C1, C2, C3, C4, C5)
-    elif method == "WSAP":
-        C1, C2, C3, C4, C5, C6 = params_opt
-        y_array_fit = ila.f_WSAP_a(t_array, C1, C2, C3, C4, C5, C6)
-        y_array_fit_at_points = ila.f_WSAP_a(t_obs, C1, C2, C3, C4, C5, C6)
     elif method == "WSAPA":
         C1, C2, C3, C4, C5, C6, C7 = params_opt
         y_array_fit = ila.f_WSAPA_a(t_array, C1, C2, C3, C4, C5, C6, C7)
         y_array_fit_at_points = ila.f_WSAPA_a(t_obs, C1, C2, C3, C4, C5, C6, C7)
+    elif method == "WSAP":
+        C1, C2, C3, C4, C5 = params_opt
+        y_array_fit = ila.f_WSAP_a(t_array, C1, C2, C3, C4, C5)
+        y_array_fit_at_points = ila.f_WSAP_a(t_obs, C1, C2, C3, C4, C5)
     elif method == "WSL":
         C1, C2, C3, C4, C5 = params_opt
         y_array_fit = ila.f_WSL_a(t_array, C1, C2, C3, C4, C5)

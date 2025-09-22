@@ -28,35 +28,19 @@ def f_AP_a(t_a, C1, C2, C3, C4, C5):
 
 ###############################################################################
 
-def f_WSAP(t, C1, C2, C3, C4, C5, C6):
+def f_WSAP(t, C1, C2, C3, C4, C5):
     D = (C5 - C4) / 2; v = t - (C5 + C4) / 2
     if D <= 0.0:
         return np.inf
     if t < C4:
-        return C1 + C2 * (-2 * v - D) * D + C3 * v + C6 * abs(t - C4) ** 1.5
-    elif C4 <= t <= C5:
-        return C1 + C2 * v * v + C3 * v
+        return C1 + C2 * (-2 * v - D) * D + C3 * abs(t - C4) ** 1.5
+    if C4 <= t <= C5:
+        return C1 + C2 * v * v
     else:
-        return C1 + C2 * (2 * v - D) * D + C3 * v + C6 * abs(t - C5) ** 1.5
+        return C1 + C2 * (2 * v - D) * D + C3 * abs(t - C5) ** 1.5
         
-def f_WSAP_a(t_a, C1, C2, C3, C4, C5, C6):
-    return list(map(lambda t: f_WSAP(t, C1, C2, C3, C4, C5, C6), t_a))
-
-###############################################################################
-
-def f_WSAPA(t, C1, C2, C3, C4, C5, C6, C7):
-    D = (C5 - C4) / 2; v = t - (C5 + C4) / 2
-    if D <= 0.0:
-        return np.inf
-    if t < C4:
-        return C1 + C2 * (-2 * v - D) * D + C3 * v + C6 * abs(t - C4) ** 1.5
-    elif C4 <= t <= C5:
-        return C1 + C2 * v * v + C3 * v
-    else:
-        return C1 + C2 * (2 * v - D) * D + C3 * v + C7 * abs(t - C5) ** 1.5
-        
-def f_WSAPA_a(t_a, C1, C2, C3, C4, C5, C6, C7):
-    return list(map(lambda t: f_WSAPA(t, C1, C2, C3, C4, C5, C6, C7), t_a))
+def f_WSAP_a(t_a, C1, C2, C3, C4, C5):
+    return list(map(lambda t: f_WSAP(t, C1, C2, C3, C4, C5), t_a))
 
 ###############################################################################
 
@@ -90,8 +74,8 @@ def f_A_a(t_a, C1, C2, C3, C4):
 
 def approx(method, t_obs, m_obs, maxfev=12000):
     
-    if method != "AP" and method != "WSAP" and method != "WSAPA" and method != "WSL" and method != "A":
-        raise Exception("Only AP, WSAP, WSAPA, WSL, and A methods are supported.")
+    if method != "AP" and method != "WSAP" and method != "WSL" and method != "A":
+        raise Exception("Only AP, WSAP, WSL, and A methods are supported.")
     
     mean_t = np.mean(t_obs)
     t_obs = t_obs - mean_t
@@ -105,12 +89,9 @@ def approx(method, t_obs, m_obs, maxfev=12000):
     C3 = 0.0
     C4 = t_min + (t_max - t_min) / 3.0
     C5 = t_max - (t_max - t_min) / 3.0
-    C6 = 0.0
-    C7 = 0.0
     
-    if method == "AP" or method == "WSAP" or method == "WSAPA":
+    if method == "AP":
         params_opt, params_cov = curve_fit(f_AP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                           # bounds=bounds,
                                            maxfev=maxfev)
         C1, C2, C3, C4, C5 = params_opt
         if C4 < t_min or C4 > t_max or C5 > t_max or C5 > t_max:
@@ -129,23 +110,15 @@ def approx(method, t_obs, m_obs, maxfev=12000):
                                                bounds=bounds,
                                                maxfev=maxfev)
             params_cov[:] = np.nan # if bounds used, covariance matrix may be invalid
-        if method == "WSAP":
-            # Use AP estimation as starting point
-            C1, C2, C3, C4, C5 = params_opt
-            params_opt, params_cov = curve_fit(f_WSAP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5, C6],
-                                               maxfev=maxfev)
-        elif method == "WSAPA":
-            # Use AP estimation as starting point
-            C1, C2, C3, C4, C5 = params_opt
-            params_opt, params_cov = curve_fit(f_WSAPA_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5, C6, C7],
-                                               maxfev=maxfev)
-            
-              
+        params_opt[3] = params_opt[3] + mean_t #C4
+        params_opt[4] = params_opt[4] + mean_t #C5
+    elif method == "WSAP":
+        params_opt, params_cov = curve_fit(f_WSAP_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
+                                           maxfev=maxfev)
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
     elif method == "WSL":
         params_opt, params_cov = curve_fit(f_WSL_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                           # bounds=bounds,
                                            maxfev=maxfev)
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
@@ -165,34 +138,19 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
     mag_extr_sig = np.nan
     eclipse_duration = np.nan
     eclipse_sig = np.nan
-    if method == "AP" or method == "WSAP" or method == "WSAPA":
-        if len(params_opt) > 5:
-        # WSAP, WSAPA
-            if len(params_opt) == 6:
-                # WSAP
-                C1, C2, C3, C4, C5, C6 = params_opt
-            elif len(params_opt) == 7:
-                # WSAPA
-                C1, C2, C3, C4, C5, C6, C7 = params_opt
-            cov_matrix = params_cov[:5, :5]
-        else:
-            # AP
-            C1, C2, C3, C4, C5 = params_opt
-            cov_matrix = params_cov.copy()
-    
+    if method == "AP":
+        C1, C2, C3, C4, C5 = params_opt
+        cov_matrix = params_cov.copy()
         time_of_extremum = (C4 + C5) / 2.0 - C3 / C2 / 2.0
         mag_of_extremum = C1 - (C3 * C3) / (4 * C2)
-        
         # we suppose that the extremun must be in the parabolic part    
         if C4 <= time_of_extremum <= C5:
             J_t = np.array([0.0, 0.5 * C3 / (C2 * C2), -0.5 / C2, 0.5, 0.5])
             J_m = np.array([1.0, (C3 * C3) / (4 * C2 * C2), -C3 / (2 * C2), 0.0, 0.0])
-              
             time_extr_var = J_t @ cov_matrix @ J_t.T
             time_extr_sig = np.sqrt(time_extr_var)
             mag_extr_var = J_m @ cov_matrix @ J_m.T
             mag_extr_sig = np.sqrt(mag_extr_var)
-            
             if abs(C5 - C4) < time_extr_sig:
                 # Parabolic part is shorter than the uncertainty.
                 # It seems the method is not suitable.
@@ -205,6 +163,17 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
             time_extr_sig = np.nan
             mag_of_extremum = np.nan
             mag_extr_sig = np.nan
+    elif method == "WSAP":
+        C1, C2, C3, C4, C5 = params_opt
+        cov_matrix = params_cov
+        time_of_extremum = (C4 + C5) / 2.0
+        mag_of_extremum = C1
+        J_t = np.array([0.0, 0.0, 0.0, 0.5, 0.5])
+        J_m = np.array([1.0, 0.0, 0.0, 0.0, 0.0])
+        time_extr_var = J_t @ cov_matrix @ J_t.T
+        time_extr_sig = np.sqrt(time_extr_var)
+        mag_extr_var = J_m @ cov_matrix @ J_m.T
+        mag_extr_sig = np.sqrt(mag_extr_var)
     elif method == "WSL":
         C1, C2, C3, C4, C5 = params_opt
         cov_matrix = params_cov

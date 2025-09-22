@@ -4,8 +4,8 @@ import ila
 
 def method_type(value):
     value_upper = value.upper()
-    if value_upper not in {"AP", "WSAP", "WSAPA", "WSL", "A", "0"}:
-        raise argparse.ArgumentTypeError("Method must be AP, WSAP, WLS, A, or 0 (case-insensitive). Use 0 to plot the data without approximation.")
+    if value_upper not in {"AP", "WSAP", "WSL", "A", "0"}:
+        raise argparse.ArgumentTypeError("Method must be AP, WSAP, WSL, A, or 0 (case-insensitive). Use 0 to plot the data without approximation.")
     return value_upper
 
 def parse_args(description):
@@ -14,7 +14,7 @@ def parse_args(description):
     parser.add_argument("filename", type=str, help="Path to the input data file")
     # Optional string argument: method
     parser.add_argument('--method', type=method_type, default="AP",
-                        help="METHOD to use: AP, WSAP, WSAPA, WSL, A or 0 (case-insensitive). Default: AP")
+                        help="METHOD to use: AP, WSAP, WSL, A or 0 (case-insensitive). Default: AP")
     # Optional boolean argument: non-inverted Y axis
     parser.add_argument('--non-inverseY', action='store_true', default=False,
                         help='Use non-inverted Y axis')
@@ -82,8 +82,6 @@ def save_result(out_file,
             s = get_source(ila.f_AP)
         elif method == "WSAP":
             s = get_source(ila.f_WSAP)
-        elif method == "WSAPA":
-            s = get_source(ila.f_WSAPA)
         elif method == "WSL":
             s = get_source(ila.f_WSL)
         elif method == "A":
@@ -94,10 +92,10 @@ def save_result(out_file,
         f.write(s + "\n")
         print()
         f.write(s + "\n")
-        s = f"Time of extremum   = \t{time_of_extremum:.5f}"
+        s = f"Time of extremum   = \t{time_of_extremum:.6f}"
         print(s)
         f.write(s + "\n")
-        s = f"Time of extr. err. = \t{time_extr_sig:.5f}"
+        s = f"Time of extr. err. = \t{time_extr_sig:.6f}"
         print(s)
         f.write(s + "\n")
         s = f"Mag of extremum    = \t{mag_of_extremum:.4f}"
