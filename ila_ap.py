@@ -69,7 +69,13 @@ def process_data(data_file_name, method, inverseY=True):
     # 1-sigma uncertainties
     param_errors = np.sqrt(np.diag(params_cov))
     
-    time_of_extremum, time_extr_sig, mag_of_extremum, mag_extr_sig = ila.method_result(method, params_opt, params_cov, min(t_obs), max(t_obs))
+    [time_of_extremum, 
+     time_extr_sig, 
+     mag_of_extremum,
+     mag_extr_sig,
+     eclipse_duration,
+     eclipse_sig
+    ] = ila.method_result(method, params_opt, params_cov, min(t_obs), max(t_obs))
     
     utils.save_result(f"approx_result-{method}.txt",
                       method,
@@ -92,6 +98,10 @@ def process_data(data_file_name, method, inverseY=True):
         C1, C2, C3, C4, C5, C6, C7 = params_opt
         y_array_fit = ila.f_WSAPA_a(t_array, C1, C2, C3, C4, C5, C6, C7)
         y_array_fit_at_points = ila.f_WSAPA_a(t_obs, C1, C2, C3, C4, C5, C6, C7)
+    elif method == "WSL":
+        C1, C2, C3, C4, C5 = params_opt
+        y_array_fit = ila.f_WSL_a(t_array, C1, C2, C3, C4, C5)
+        y_array_fit_at_points = ila.f_WSL_a(t_obs, C1, C2, C3, C4, C5)
     else: #method == "A"
        C1, C2, C3, C4 = params_opt
        C5 = None
@@ -106,6 +116,10 @@ def process_data(data_file_name, method, inverseY=True):
     print("sigma        = ", sigma)
     sigma = np.sqrt(np.sum((m_obs - y_array_fit_at_points)**2) * len(params_opt) / len(m_obs) / (len(m_obs) - len(params_opt)))    
     print("sigma_m[x_c] = ", sigma, " # r.m.s. accuracy of the fit")
+    if method == "WSL":
+        print()        
+        print("Eclipse duration (C5 - C4) = ", eclipse_duration)
+        print("Eclipse duration error     = ", eclipse_sig)
 
     utils.plot_result(t_obs, m_obs, 
                       t_array, y_array_fit, 
@@ -127,7 +141,7 @@ if __name__ == "__main__":
         try:
             main()
         except Exception as e:
-            print(f"Fatal Error: {e}.")
+            print(f"Fatal Error: {e}")
         finally:
             print()
             sys.exit()
