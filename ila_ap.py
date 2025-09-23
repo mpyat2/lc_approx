@@ -13,7 +13,7 @@ Methods:
 ###############################################################################
 
 # Set to True to get better error info
-DEBUG = False
+DEBUG = True
 
 JD_SHIFT = 0 #-2400000
 
@@ -58,7 +58,7 @@ def process_data(data_file_name, method, inverseY=True):
         sys.exit()
     
     print("Approximation started....")
-    params_opt, params_cov = ila.approx(method, t_obs, m_obs, maxfev=MAXFEV)
+    params_opt, params_cov, param_warning = ila.approx(method, t_obs, m_obs, maxfev=MAXFEV)
     print("Approximation successful.")
     print()
         
@@ -81,7 +81,8 @@ def process_data(data_file_name, method, inverseY=True):
                       method,
                       time_of_extremum, time_extr_sig,
                       mag_of_extremum, mag_extr_sig,
-                      params_opt, param_errors)
+                      params_opt, param_errors,
+                      param_warning)
     
     t_min = min(t_obs)
     t_max = max(t_obs)
@@ -126,7 +127,8 @@ def process_data(data_file_name, method, inverseY=True):
                       C4, C5, 
                       time_of_extremum, time_extr_sig,
                       mag_of_extremum, mag_extr_sig,
-                      inverseY)
+                      inverseY,
+                      param_warning)
 
 ###############################################################################
 

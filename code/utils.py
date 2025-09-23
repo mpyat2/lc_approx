@@ -25,7 +25,8 @@ def plot_result(t_obs, m_obs,
                 C4, C5, 
                 time_of_extremum, time_extr_sig,
                 mag_of_extremum, mag_extr_sig,
-                inverseY):
+                inverseY,
+                info_message):
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
     plt.rcParams["font.family"] = "serif"
@@ -61,6 +62,10 @@ def plot_result(t_obs, m_obs,
 
     if time_of_extremum is not None and mag_of_extremum is not None:
         ax.plot(time_of_extremum, mag_of_extremum, 'o', markersize=4, color='red')
+
+    if info_message is not None:
+        print(info_message)
+        ax.set_title(info_message, fontsize=10, color="red")
     
     plt.show()
 
@@ -72,12 +77,16 @@ def save_result(out_file,
                 method,
                 time_of_extremum, time_extr_sig,
                 mag_of_extremum, mag_extr_sig,
-                params_opt, param_errors):
+                params_opt, param_errors,
+                info_text):
     m = 0
     with open(out_file, "w") as f:
         s = f"Method: {method}"
         print(s)
+        f.write(s + "\n")
         print()
+        f.write("\n")
+        
         if method == "AP":
             s = get_source(ila.f_AP)
         elif method == "WSAP":
@@ -91,7 +100,13 @@ def save_result(out_file,
         print(s)
         f.write(s + "\n")
         print()
-        f.write(s + "\n")
+        f.write("\n")
+        
+        if info_text is not None:
+            print(info_text)
+            f.write(info_text + "\n")
+            
+        
         s = f"Time of extremum   = \t{time_of_extremum:.6f}"
         print(s)
         f.write(s + "\n")
