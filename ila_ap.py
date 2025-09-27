@@ -54,7 +54,8 @@ def process_data(data_file_name, method, inverseY=True):
                           None, None, 
                           None, None,
                           None, None,
-                          inverseY)
+                          inverseY,
+                          None)
         sys.exit()
     
     print("Approximation started....")
