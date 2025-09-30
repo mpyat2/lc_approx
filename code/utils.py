@@ -1,5 +1,8 @@
 import argparse
 import inspect
+import io
+import base64
+import numpy as np
 import ila
 
 def method_type(value):
@@ -18,7 +21,41 @@ def parse_args(description):
     # Optional boolean argument: non-inverted Y axis
     parser.add_argument('--non-inverseY', action='store_true', default=False,
                         help='Use non-inverted Y axis')
+    # Optional string argument: file of ranges for batch processing
+    parser.add_argument('--ranges', type=str, default="",
+                        help='File of ranges for batch processing')
     return parser.parse_args()
+
+def generate_curve(method, params_opt, t_obs):
+    t_min = min(t_obs)
+    t_max = max(t_obs)
+    t_array = np.linspace(t_min, t_max, 10000)
+    if method == "AP":
+        C1, C2, C3, C4, C5 = params_opt
+        y_array_fit = ila.f_AP_a(t_array, C1, C2, C3, C4, C5)
+        y_array_fit_at_points = ila.f_AP_a(t_obs, C1, C2, C3, C4, C5)
+    elif method == "WSAPA":
+        C1, C2, C3, C4, C5, C6, C7 = params_opt
+        y_array_fit = ila.f_WSAPA_a(t_array, C1, C2, C3, C4, C5, C6, C7)
+        y_array_fit_at_points = ila.f_WSAPA_a(t_obs, C1, C2, C3, C4, C5, C6, C7)
+    elif method == "WSAP":
+        C1, C2, C3, C4, C5 = params_opt
+        y_array_fit = ila.f_WSAP_a(t_array, C1, C2, C3, C4, C5)
+        y_array_fit_at_points = ila.f_WSAP_a(t_obs, C1, C2, C3, C4, C5)
+    elif method == "WSL":
+        C1, C2, C3, C4, C5 = params_opt
+        y_array_fit = ila.f_WSL_a(t_array, C1, C2, C3, C4, C5)
+        y_array_fit_at_points = ila.f_WSL_a(t_obs, C1, C2, C3, C4, C5)
+    elif method == "A":
+       C1, C2, C3, C4 = params_opt
+       C5 = None
+       y_array_fit = ila.f_A_a(t_array, C1, C2, C3, C4)
+       y_array_fit_at_points = ila.f_A_a(t_obs, C1, C2, C3, C4)
+    else:
+        raise Exception(f"Unsupported method: {method}")
+       
+    return t_array, y_array_fit, y_array_fit_at_points, C4, C5
+
 
 def plot_result(t_obs, m_obs, 
                 t_array, y_array_fit, 
@@ -26,7 +63,9 @@ def plot_result(t_obs, m_obs,
                 time_of_extremum, time_extr_sig,
                 mag_of_extremum, mag_extr_sig,
                 inverseY,
-                info_message):
+                info_message,
+                to_buf = False):
+    
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
     plt.rcParams["font.family"] = "serif"
@@ -67,8 +106,18 @@ def plot_result(t_obs, m_obs,
         print(info_message)
         ax.set_title(info_message, fontsize=10, color="red")
     
-    plt.show()
-
+    if not to_buf:
+        plt.show()
+        return None
+    else:
+        # Save figure to buffer
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        encoded = base64.b64encode(buf.read()).decode('utf-8')
+        buf.close()
+        plt.close(fig)
+        return encoded
 
 def get_source(func):
     return inspect.getsource(func)

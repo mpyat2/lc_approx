@@ -182,17 +182,6 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
             time_extr_sig = np.nan
             mag_of_extremum = np.nan
             mag_extr_sig = np.nan
-    # elif method == "WSAP":
-    #     C1, C2, C3, C4, C5 = params_opt
-    #     cov_matrix = params_cov
-    #     time_of_extremum = (C4 + C5) / 2.0
-    #     mag_of_extremum = C1
-    #     J_t = np.array([0.0, 0.0, 0.0, 0.5, 0.5])
-    #     J_m = np.array([1.0, 0.0, 0.0, 0.0, 0.0])
-    #     time_extr_var = J_t @ cov_matrix @ J_t.T
-    #     time_extr_sig = np.sqrt(time_extr_var)
-    #     mag_extr_var = J_m @ cov_matrix @ J_m.T
-    #     mag_extr_sig = np.sqrt(mag_extr_var)
     elif method == "WSL":
         C1, C2, C3, C4, C5 = params_opt
         cov_matrix = params_cov
@@ -216,6 +205,8 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
         time_extr_sig = np.sqrt(cov_matrix[3, 3]) #Uncertainty of C4
         mag_of_extremum = C1
         mag_extr_sig = np.sqrt(cov_matrix[0, 0])  #Uncertainty of C1
+    else:
+        raise Exception(f"Unsupported method: {method}")
 
     return time_of_extremum, time_extr_sig, mag_of_extremum, mag_extr_sig, eclipse_duration, eclipse_sig
 
