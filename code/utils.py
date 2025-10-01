@@ -54,7 +54,7 @@ def generate_curve(method, params_opt, t_obs):
     else:
         raise Exception(f"Unsupported method: {method}")
        
-    return t_array, y_array_fit, y_array_fit_at_points, C4, C5
+    return t_array, y_array_fit, y_array_fit_at_points
 
 
 def plot_result(t_obs, m_obs, 
