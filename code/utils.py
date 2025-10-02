@@ -1,9 +1,12 @@
+from colorama import Fore, Back
 import argparse
-import inspect
 import io
 import base64
 import numpy as np
 import ila
+
+def printWarning(msg):
+    print(Fore.LIGHTRED_EX + Back.LIGHTYELLOW_EX + msg + Fore.RESET + Back.RESET)
 
 def method_type(value):
     value_upper = value.upper()
@@ -24,6 +27,12 @@ def parse_args(description):
     # Optional string argument: file of ranges for batch processing
     parser.add_argument('--ranges', type=str, default="",
                         help='File of ranges for batch processing')
+    # Optional string argument: result file name
+    parser.add_argument('--result', type=str, default="result.txt",
+                        help='File with the resulting parameters of the approximation')
+    # Optional string argument: preview file name
+    parser.add_argument('--preview', type=str, default="result.html",
+                        help='HTML file with the plot')
     return parser.parse_args()
 
 def generate_curve(method, params_opt, t_obs):
@@ -103,7 +112,7 @@ def plot_result(t_obs, m_obs,
         ax.plot(time_of_extremum, mag_of_extremum, 'o', markersize=4, color='red')
 
     if info_message is not None:
-        print(info_message)
+        #print(info_message)
         ax.set_title(info_message, fontsize=10, color="red")
     
     if not to_buf:
@@ -118,70 +127,4 @@ def plot_result(t_obs, m_obs,
         buf.close()
         plt.close(fig)
         return encoded
-
-def get_source(func):
-    return inspect.getsource(func)
-
-def save_result(out_file,
-                method,
-                time_of_extremum, time_extr_sig,
-                mag_of_extremum, mag_extr_sig,
-                params_opt, param_errors,
-                info_text):
-    m = 0
-    with open(out_file, "w") as f:
-        s = f"Method: {method}"
-        print(s)
-        f.write(s + "\n")
-        print()
-        f.write("\n")
         
-        if method == "AP":
-            s = get_source(ila.f_AP)
-        elif method == "WSAP":
-            s = get_source(ila.f_WSAP)
-        elif method == "WSL":
-            s = get_source(ila.f_WSL)
-        elif method == "A":
-            s = get_source(ila.f_A)
-        else:
-            s = ""
-        print(s)
-        f.write(s + "\n")
-        print()
-        f.write("\n")
-        
-        if info_text is not None:
-            print(info_text)
-            f.write(info_text + "\n")
-            
-        
-        s = f"Time of extremum   = \t{time_of_extremum:.6f}"
-        print(s)
-        f.write(s + "\n")
-        s = f"Time of extr. err. = \t{time_extr_sig:.6f}"
-        print(s)
-        f.write(s + "\n")
-        s = f"Mag of extremum    = \t{mag_of_extremum:.4f}"
-        print(s)
-        f.write(s + "\n")
-        s = f"Mag of extr. err.  = \t{mag_extr_sig:.4f}"
-        print(s)
-        f.write(s + "\n")
-        print()
-        f.write("\n")
-        s = "Param\tValue\tUncertainty"
-        print(s)
-        f.write(s + "\n")
-        for p, e in zip(params_opt, param_errors):
-            m += 1
-            s = f"C{m}\t{p}\t{e}"
-            print(s)
-            f.write(s + "\n")
-
-def save_approx(out_file,
-                t_obs, y_array_fit_at_points, m_obs):
-    with open(out_file, "w") as f:
-        for t, y, o in zip(t_obs, y_array_fit_at_points, m_obs):
-            f.write(f"{t} {y} # {o}\n")
-           

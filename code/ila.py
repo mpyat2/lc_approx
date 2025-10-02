@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import curve_fit
-from colorama import Fore, Back
 
 # Andrych, Kateryna D.; Andronov, Ivan L.; Chinarova, Lidia L.
 # MAVKA: Program of Statistically Optimal Determination of Phenomenological 
@@ -9,9 +8,6 @@ from colorama import Fore, Back
 # Journal of Physical Studies, Vol. 24, No. 1, Article 1902 [10 pages] (2020)
 # Bibcode: 2020JPhSt..24.1902A
 # DOI: 10.30970/jps.24.1902, 10.48550/arXiv.1912.07677
-
-def printWarning(msg):
-    print(Fore.LIGHTRED_EX + Back.LIGHTYELLOW_EX + msg + Fore.RESET + Back.RESET)
 
 def f_AP(t, C1, C2, C3, C4, C5):
     D = (C5 - C4) / 2; v = t - (C5 + C4) / 2
@@ -102,8 +98,7 @@ def approx(method, t_obs, m_obs, maxfev=12000):
                                            maxfev=maxfev)
         C1, C2, C3, C4, C5 = params_opt
         if C4 < t_min or C4 > t_max or C5 < t_min or C5 > t_max:
-            printWarning("**** Bad C4 or C5 or both. Trying with bounds. Error estimation may be incorrect!")
-            param_warning = "Calculated with bounds. Error estimation may be incorrect!"            
+            param_warning = "Bad C4 or C5 or both. Trying with bounds. Error estimation may be incorrect!"            
             #input("Press ENTER: ")
             C1 = np.mean(m_obs)
             C2 = 0.0
@@ -137,6 +132,7 @@ def approx(method, t_obs, m_obs, maxfev=12000):
     return params_opt, params_cov, param_warning
 
 def method_result(method, params_opt, params_cov, t_min, t_max):
+    warning = None
     time_of_extremum = np.nan
     time_extr_sig = np.nan
     mag_of_extremum = np.nan
@@ -173,11 +169,11 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
             if abs(C5 - C4) < time_extr_sig:
                 # Parabolic part is shorter than the uncertainty.
                 # It seems the method is not suitable.
-                printWarning("**** The parabolic part is shorter than the uncertainty! Try another method.")
+                warning = "The parabolic part is shorter than the uncertainty! Try another method."
                 #time_extr_sig = np.nan
                 #mag_extr_sig = np.nan
         else:
-            printWarning("**** The extremum is out of the parabolic part! Try another method.")
+            warning = "The extremum is out of the parabolic part! Try another method."
             time_of_extremum = np.nan
             time_extr_sig = np.nan
             mag_of_extremum = np.nan
@@ -197,7 +193,7 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
         if abs(C5 - C4) < time_extr_sig:
             # Parabolic part is shorter than the uncertainty.
             # It seems the method is not suitable.
-            printWarning("**** The parabolic part is shorter than the uncertainty! Try another method.")
+            warning = "The parabolic part is shorter than the uncertainty! Try another method."
     elif method == "A":
         C1, C2, C3, C4 = params_opt
         cov_matrix = params_cov
@@ -208,5 +204,5 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
     else:
         raise Exception(f"Unsupported method: {method}")
 
-    return time_of_extremum, time_extr_sig, mag_of_extremum, mag_extr_sig, eclipse_duration, eclipse_sig
+    return time_of_extremum, time_extr_sig, mag_of_extremum, mag_extr_sig, eclipse_duration, eclipse_sig, warning
 

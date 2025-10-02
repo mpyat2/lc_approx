@@ -13,7 +13,7 @@ Methods:
 ###############################################################################
 
 # Set to True to get better error info
-DEBUG = True
+DEBUG = False
 
 # Try to increase this parameter (number of iterations) if the solution cannot be found
 #MAXFEV = 50000
@@ -37,7 +37,7 @@ colorama_init()
 
 ###############################################################################
 
-def process_data(data_file_name, method, inverseY):
+def process_data(data_file_name, method, inverseY, range_file_name, result_file_name, preview_file_name):
     
     data = pd.read_csv(data_file_name, 
                        comment='#', skip_blank_lines=True,
@@ -49,6 +49,11 @@ def process_data(data_file_name, method, inverseY):
     
     t_obs = data['time']
     m_obs = data['mag']
+
+    # Sort by times (essential in batch mode)
+    t_obs, m_obs = zip(*sorted(zip(t_obs, m_obs)))
+    t_obs = np.array(t_obs)
+    m_obs = np.array(m_obs)
     
     if method == "0":
         # Plot and exit
@@ -61,92 +66,26 @@ def process_data(data_file_name, method, inverseY):
                           None)
         sys.exit()
     
-    print("Approximation started....")
-    params_opt, params_cov, param_warning = ila.approx(method, t_obs, m_obs, maxfev=MAXFEV)
-    print("Approximation successful.")
-    print()
-        
-    if method == "AP" or method == "WSAP" or method == "WSL":
-        if params_opt[3] >= params_opt[4]:
-            raise Exception("C4 must be less than C5. Aborting.")
+    if range_file_name == "":
+        range_file_name = None
     
-    # 1-sigma uncertainties
-    param_errors = np.sqrt(np.diag(params_cov))
-    
-    [time_of_extremum, 
-     time_extr_sig, 
-     mag_of_extremum,
-     mag_extr_sig,
-     eclipse_duration,
-     eclipse_sig
-    ] = ila.method_result(method, params_opt, params_cov, min(t_obs), max(t_obs))
-    
-    utils.save_result(f"approx_result-{method}.txt",
-                      method,
-                      time_of_extremum, time_extr_sig,
-                      mag_of_extremum, mag_extr_sig,
-                      params_opt, param_errors,
-                      param_warning)
-    
-    t_array, y_array_fit, y_array_fit_at_points = utils.generate_curve(method, params_opt, t_obs)
-    C4 = params_opt[3]
-    if len(params_opt) > 4:
-        C5 = params_opt[4]
+    if range_file_name is None:
+        # One-extremum mode
+        print('One-extremum mode')
+        ranges = pd.DataFrame(
+            np.array([[1, min(t_obs), len(t_obs), max(t_obs)]]),
+            columns=['point1', 'time1', 'point2', 'time2'],                          
+            )
+        ranges = ranges.astype({'point1': 'int32', 'time1': 'float64', 'point2': 'int32', 'time2': 'float64'})        
     else:
-        C5 = None
-    
-    utils.save_approx(f"approx_data-{method}.txt",
-                      t_obs, y_array_fit_at_points, m_obs)
-       
-    print()
-    sigma = np.sqrt(np.sum((m_obs - y_array_fit_at_points)**2) / (len(m_obs) - len(params_opt)))
-    print("sigma        = ", sigma)
-    sigma = np.sqrt(np.sum((m_obs - y_array_fit_at_points)**2) * len(params_opt) / len(m_obs) / (len(m_obs) - len(params_opt)))    
-    print("sigma_m[x_c] = ", sigma, " # r.m.s. accuracy of the fit")
-    if method == "WSL":
-        print()        
-        print("Eclipse duration (C5 - C4) = ", eclipse_duration)
-        print("Eclipse duration error     = ", eclipse_sig)
-
-    utils.plot_result(t_obs, m_obs, 
-                      t_array, y_array_fit, 
-                      C4, C5, 
-                      time_of_extremum, time_extr_sig,
-                      mag_of_extremum, mag_extr_sig,
-                      inverseY,
-                      param_warning)
-
-
-def process_batch(data_file_name, range_file_name, method, inverseY):
-    
-    data = pd.read_csv(data_file_name, 
-                       comment='#', skip_blank_lines=True,
-                       sep="\\s+",
-                       names=['time', 'mag'], 
-                       dtype={'time': 'float64', 'mag': 'float64'}, 
-                       usecols=['time', 'mag'])
-    print(f"File loaded: {len(data['mag'])} points")
-    
-    times = data['time']
-    mags  = data['mag']
-
-    # Sort by times (just in case)
-    times, mags = zip(*sorted(zip(times, mags)))
-    times = np.array(times)
-    mags = np.array(mags)
-    
-    ranges = pd.read_csv(range_file_name, 
-                         comment='#', 
-                         skip_blank_lines=True,
-                         sep="\\s+",
-                         names=['point1', 'time1', 'point2', 'time2'],
-                         dtype={'point1': 'int32', 'time1': 'float64', 'point2': 'int32', 'time2': 'float64'},
-                         usecols=['point1', 'time1', 'point2', 'time2'])
- 
-    print(f"Ranges loaded: {len(ranges)} ranges")
-    
-    result_file = f"approx_batch_result-{method}.txt"
-    preview_file = f"approx_batch_result-{method}.html"
+        ranges = pd.read_csv(range_file_name, 
+                             comment='#', 
+                             skip_blank_lines=True,
+                             sep="\\s+",
+                             names=['point1', 'time1', 'point2', 'time2'],
+                             dtype={'point1': 'int32', 'time1': 'float64', 'point2': 'int32', 'time2': 'float64'},
+                             usecols=['point1', 'time1', 'point2', 'time2'])
+        print(f"Range file loaded: {len(ranges)} ranges")
 
     info = {
         'Method': method,
@@ -166,35 +105,37 @@ def process_batch(data_file_name, range_file_name, method, inverseY):
     if method == "WSL":
         info_str += "\t" + list(info.keys())[-2]
         info_str += "\t" + list(info.keys())[-1]
-    with open(result_file, "w") as f:
+    with open(result_file_name, "w") as f:
         f.write(info_str + "\n")
         f.flush()
         
-    with open(preview_file, "w") as f_preview:
+    with open(preview_file_name, "w") as f_preview:
         f_preview.write("<html><body>\n")
         f_preview.write("<h2>Preview</h2>\n")
         f_preview.write("<hr>\n")
-        
-    
+
     for idx, row in ranges.iterrows():
         t_start = row['time1']
         t_stop = row['time2']
-        mask = (times >= t_start) & (times <= t_stop)
-        time_subset = times[mask]
-        mag_subset  = mags[mask]
-       
-        params_opt, params_cov, param_warning = ila.approx(method, time_subset, mag_subset, maxfev=MAXFEV)
-        
+        mask = (t_obs >= t_start) & (t_obs <= t_stop)
+        time_subset = t_obs[mask]
+        mag_subset  = m_obs[mask]
+
         info['Method'] = method
         info['Points'] = len(mag_subset)
         info['Start Time'] = t_start
         info['End Time'] = t_stop
         info_str = "\t".join(f"{k}: {v}" for k, v in list(info.items())[:4])
         print(info_str)
+
+        params_opt, params_cov, param_warning = ila.approx(method, time_subset, mag_subset, maxfev=MAXFEV)
+        if param_warning is not None:
+            utils.printWarning(param_warning)
         
         if method == "AP" or method == "WSAP" or method == "WSL":
             if params_opt[3] >= params_opt[4]:
                 info_str = info_str + "\tFailed: C4 must be less than C5."
+                utils.printWarning(info_str)
                 f.write(info_str + "\n")
                 continue
 
@@ -206,8 +147,11 @@ def process_batch(data_file_name, range_file_name, method, inverseY):
          mag_of_extremum,
          mag_extr_sig,
          eclipse_duration,
-         eclipse_sig
+         eclipse_sig,
+         param_warning
         ] = ila.method_result(method, params_opt, params_cov, min(time_subset), max(time_subset))
+        if param_warning is not None:
+            utils.printWarning(param_warning)
         
         t_array, y_array_fit, y_array_fit_at_points = utils.generate_curve(method, params_opt, time_subset)
         C4 = params_opt[3]
@@ -238,9 +182,20 @@ def process_batch(data_file_name, range_file_name, method, inverseY):
             info_str += "\t" + str(list(info.values())[-1])
             info_str2 += " | " + f"{list(info.keys())[-2]}: {str(list(info.values())[-2])}"
             info_str2 += " | " + f"{list(info.keys())[-1]}: {str(list(info.values())[-1])}"
-        with open(result_file, "a") as f:            
+        with open(result_file_name, "a") as f:            
             f.write(info_str + "\n")
             f.flush()
+
+        if range_file_name is None:
+            # One-extremum mode
+            utils.plot_result(time_subset, mag_subset, 
+                              t_array, y_array_fit, 
+                              C4, C5, 
+                              time_of_extremum, time_extr_sig,
+                              mag_of_extremum, mag_extr_sig,
+                              inverseY,
+                              param_warning,
+                              False)
 
         encoded = utils.plot_result(time_subset, mag_subset, 
                                     t_array, y_array_fit, 
@@ -251,29 +206,28 @@ def process_batch(data_file_name, range_file_name, method, inverseY):
                                     param_warning,
                                     True)
         
-        with open(preview_file, "a") as f_preview:
+        with open(preview_file_name, "a") as f_preview:
             f_preview.write(f"<p>{info_str2}</p>\n")
             f_preview.write(f"<img src='data:image/png;base64,{encoded}'><br><br>\n")
             f_preview.write("<hr>\n")
             f_preview.flush()
 
-    with open(preview_file, "a") as f_preview:
+    with open(preview_file_name, "a") as f_preview:
         f_preview.write("<p>End of file</p>\n")
         f_preview.write("\n</body></html>")                
-       
 
 ###############################################################################
 
 def main():
     args = utils.parse_args(DESCRIPTION)
-    ranges = args.ranges
+    range_file_name = args.ranges
+    result_file_name = args.result
+    preview_file_name = args.preview
     method = args.method.upper()
-    if ranges != "":
+    if range_file_name != "":
         if method == "0":
             raise Exception(f"Method {method} is not applicable in this context")            
-        process_batch(args.filename, ranges, method, not args.non_inverseY)
-    else:
-        process_data(args.filename, method, not args.non_inverseY)
+    process_data(args.filename, method, not args.non_inverseY, range_file_name, result_file_name, preview_file_name)
 
 if __name__ == "__main__":
     if DEBUG:
