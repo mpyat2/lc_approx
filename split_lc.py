@@ -9,9 +9,9 @@ import base64
 def parse_args():
     parser = argparse.ArgumentParser(description="Light Curve Splitter")
     parser.add_argument("filename", type=str, help="Path to the input data file")
-    parser.add_argument("--output", type=str, default="ranges.!", help="Path to the output preview file")
+    parser.add_argument("--output", type=str, default="ranges.!", help="Path to the output file")
     parser.add_argument("--preview", type=str, default="SplitPreview.html", help="Path to the output preview file")
-    parser.add_argument("--epoch", type=np.float64, help="Initial_Epoch")
+    parser.add_argument("--epoch", type=np.float64, help="Initial Epoch")
     parser.add_argument("--period", type=np.float64, help="Period")
     parser.add_argument("--start-phase", type=np.float64, help="Start phase")
     parser.add_argument("--stop-phase", type=np.float64, help="Stop phase")
