@@ -148,10 +148,10 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
          mag_extr_sig,
          eclipse_duration,
          eclipse_sig,
-         param_warning
+         param_warning1
         ] = ila.method_result(method, params_opt, params_cov, min(time_subset), max(time_subset))
-        if param_warning is not None:
-            utils.printWarning(param_warning)
+        if param_warning1 is not None:
+            utils.printWarning(param_warning1)
         
         t_array, y_array_fit, y_array_fit_at_points = utils.generate_curve(method, params_opt, time_subset)
         C4 = params_opt[3]
@@ -170,7 +170,14 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
         info['Eclipse Duration'] = eclipse_duration
         info['Eclipse Duration Uncertainty'] = eclipse_sig
         
-        if param_warning is not None:
+        if param_warning is not None or param_warning1 is not None:
+            if param_warning is None:
+                param_warning = ""    
+            if param_warning1 is None:
+                param_warning1 = ""
+            if param_warning != "" and param_warning1 != "":
+                param_warning += ";"
+            param_warning += param_warning1
             info['Method'] = method + " WARNING! " + param_warning
         else:
             info['Method'] = method
