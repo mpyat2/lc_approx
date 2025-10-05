@@ -24,6 +24,9 @@ def parse_args(description):
     # Optional boolean argument: non-inverted Y axis
     parser.add_argument('--non-inverseY', action='store_true', default=False,
                         help='Use non-inverted Y axis')
+    # Optional boolean argument: do not show plot in the single-extremum mode
+    parser.add_argument('--no-plot', action='store_true', default=False,
+                        help='Do not display plot in the single-extremum mode')
     # Optional string argument: file of ranges for batch processing
     parser.add_argument('--ranges', type=str, default="",
                         help='File of ranges for batch processing')

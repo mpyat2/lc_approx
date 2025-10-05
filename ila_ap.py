@@ -34,7 +34,7 @@ colorama_init()
 
 ###############################################################################
 
-def process_data(data_file_name, method, inverseY, range_file_name, result_file_name, preview_file_name):
+def process_data(data_file_name, method, inverseY, showPlot, range_file_name, result_file_name, preview_file_name):
     
     data = pd.read_csv(data_file_name, 
                        comment='#', skip_blank_lines=True,
@@ -153,9 +153,13 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
         
         if method == "AP" or method == "WSAP" or method == "WSL":
             if params_opt[3] >= params_opt[4]:
-                info_str = info_str + "\tFailed: C4 must be less than C5."
+                info_str = info_str + f"\tFailed: C4 must be less than C5. C4 = {params_opt[3]}; C5 = {params_opt[4]}"
                 utils.printWarning(info_str)
-                f.write(info_str + "\n")
+                with open(result_file_name, "a") as f:
+                    f.write(info_str + "\n")
+                with open(preview_file_name, "a") as f_preview:
+                    f_preview.write("<p>Failed. See the file with results.</p>\n")
+                    
                 continue
 
         # 1-sigma uncertainties
@@ -224,14 +228,15 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
             print('-' * 80)
             info_list2 = info_str2.split(" | ")
             for i in range(4, len(info_list2)): print(info_list2[i])
-            utils.plot_result(time_subset, mag_subset, 
-                              t_array, y_array_fit, 
-                              C4, C5, 
-                              time_of_extremum, time_extr_sig,
-                              mag_of_extremum, mag_extr_sig,
-                              inverseY,
-                              param_warning,
-                              False)
+            if showPlot:
+                utils.plot_result(time_subset, mag_subset, 
+                                  t_array, y_array_fit, 
+                                  C4, C5, 
+                                  time_of_extremum, time_extr_sig,
+                                  mag_of_extremum, mag_extr_sig,
+                                  inverseY,
+                                  param_warning,
+                                  False)
 
         encoded = utils.plot_result(time_subset, mag_subset, 
                                     t_array, y_array_fit, 
@@ -263,7 +268,7 @@ def main():
     if range_file_name != "":
         if method == "0":
             raise Exception(f"Method {method} is not applicable in this context")            
-    process_data(args.filename, method, not args.non_inverseY, range_file_name, result_file_name, preview_file_name)
+    process_data(args.filename, method, not args.non_inverseY, not args.no_plot, range_file_name, result_file_name, preview_file_name)
 
 if __name__ == "__main__":
     if DEBUG:

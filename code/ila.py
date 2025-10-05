@@ -195,9 +195,9 @@ def method_result(method, params_opt, params_cov, t_min, t_max):
         J_t = np.array([0.0, 0.0, 0.0, -1.0, 1.0])
         eclipse_sig = np.sqrt(J_t @ cov_matrix @ J_t.T)
         if abs(C5 - C4) < time_extr_sig:
-            # Parabolic part is shorter than the uncertainty.
+            # Flat part is shorter than the uncertainty.
             # It seems the method is not suitable.
-            warning = "The parabolic part is shorter than the uncertainty! Try another method."
+            warning = "The flat part is shorter than the uncertainty! Try another method."
     elif method == "A":
         C1, C2, C3, C4 = params_opt
         cov_matrix = params_cov
