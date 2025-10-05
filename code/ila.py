@@ -69,6 +69,10 @@ def f_A_a(t_a, C1, C2, C3, C4):
 
 ###############################################################################
 
+#FTOL=1e-8
+#XTOL=1e-8
+#GTOL=1e-8
+
 def approx(method, t_obs, m_obs, maxfev=12000):
     if method != "AP" and method != "WSAP" and method != "WSL" and method != "A":
         raise Exception("Only AP, WSAP, WSL, and A methods are supported.")
@@ -95,40 +99,40 @@ def approx(method, t_obs, m_obs, maxfev=12000):
             func = f_WSAP_a
             
         params_opt, params_cov = curve_fit(func, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                           maxfev=maxfev)
+                                           maxfev=maxfev, 
+                                           #ftol=FTOL, xtol=XTOL, gtol=GTOL
+                                           )
+        #print(params_cov)
+        #print(params_opt)
         C1, C2, C3, C4, C5 = params_opt
         if C4 < t_min or C4 > t_max or C5 < t_min or C5 > t_max:
-            param_warning = "Bad C4 or C5 or both. Trying with bounds. Error estimation may be incorrect!"            
-            #input("Press ENTER: ")
-            C1 = np.mean(m_obs)
-            C2 = 0.0
-            C3 = 0.0
-            C4 = t_min + (t_max - t_min) / 3.0
-            C5 = t_max - (t_max - t_min) / 3.0
-            #C4 = t_min
-            #C5 = t_max
-            bounds = (
-                    [ -np.inf, -np.inf, -np.inf, t_min, t_min ],  # lower bounds
-                    [ np.inf,  np.inf,  np.inf, t_max, t_max ]   # upper bounds
-                )
+            param_warning = "Bad C4 or C5 or both. Trying again using the previous values as the starting point."
             params_opt, params_cov = curve_fit(func, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                               bounds=bounds,
-                                               maxfev=maxfev)
-            #params_cov[:] = np.nan # if bounds used, covariance matrix may be invalid
+                                               maxfev=maxfev, 
+                                               #ftol=FTOL, xtol=XTOL, gtol=GTOL
+                                               )
+            #print(params_cov)
+            if C4 < t_min or C4 > t_max or C5 < t_min or C5 > t_max:
+                param_warning = "Second run: Bad C4 or C5 or both. Try another method."
+            
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
     elif method == "WSL":
         params_opt, params_cov = curve_fit(f_WSL_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                           maxfev=maxfev)
+                                           maxfev=maxfev, 
+                                           #ftol=FTOL, xtol=XTOL, gtol=GTOL
+                                           )
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
     elif method == "A":
         C4  = (t_max + t_min) / 2.0
-        params_opt, params_cov = curve_fit(f_A_a, t_obs, m_obs, p0=[C1, C2, C3, C4], maxfev=maxfev)
+        params_opt, params_cov = curve_fit(f_A_a, t_obs, m_obs, p0=[C1, C2, C3, C4],
+                                           maxfev=maxfev, 
+                                           #ftol=FTOL, xtol=XTOL, gtol=GTOL
+                                           )
         params_opt[3] = params_opt[3] + mean_t #C4
     else:
         raise Exception(f"Unknown mapproximation ethod: {method}")
-
     return params_opt, params_cov, param_warning
 
 def method_result(method, params_opt, params_cov, t_min, t_max):

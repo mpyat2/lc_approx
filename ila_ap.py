@@ -30,9 +30,6 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'code')
 import utils
 import ila
 
-if sys.version_info < (3, 8):
-    raise RuntimeError("Python 3.8 or higher is required")
-
 colorama_init()
 
 ###############################################################################
@@ -87,24 +84,46 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
                              usecols=['point1', 'time1', 'point2', 'time2'])
         print(f"Range file loaded: {len(ranges)} ranges")
 
+    info_keys = [
+        'Method',
+        'Points',
+        'Start Time',
+        'End Time',
+        'Sigma',
+        'Time of Extremum (TOM)',
+        'TOM Uncertainty',
+        'Magnitude',
+        'Magnitude Uncertainty',
+        'C4',
+        'C4 Uncertainty',
+        'C5',
+        'C5 Uncertainty',
+        'Eclipse Duration',
+        'Eclipse Duration Uncertainty'
+        ]
+
     info = {
-        'Method': method,
-        'Points': None,
-        'Start Time': None,
-        'End Time': None,
-        'Sigma': None,
-        'Time of Extremum (TOM)': None,
-        'TOM Uncertainty': None,
-        'Magnitude': None,
-        'Magnitude Uncertainty': None,
-        'Eclipse Duration': None,
-        'Eclipse Duration Uncertainty': None
+        info_keys[0]: method,
+        info_keys[1]: None,
+        info_keys[2]: None,
+        info_keys[3]: None,
+        info_keys[4]: None,
+        info_keys[5]: None,
+        info_keys[6]: None,
+        info_keys[7]: None,
+        info_keys[8]: None,
+        info_keys[9]: None,
+        info_keys[10]: None,
+        info_keys[11]: None,
+        info_keys[12]: None,
+        info_keys[13]: None,
+        info_keys[14]: None
         }
 
-    info_str = "\t".join(list(info.keys())[:-2])
+    info_str = "\t".join(info_keys[:-2])
     if method == "WSL":
-        info_str += "\t" + list(info.keys())[-2]
-        info_str += "\t" + list(info.keys())[-1]
+        info_str += "\t" + info_keys[-2]
+        info_str += "\t" + info_keys[-1]
     with open(result_file_name, "w") as f:
         f.write(info_str + "\n")
         f.flush()
@@ -125,7 +144,7 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
         info['Points'] = len(mag_subset)
         info['Start Time'] = t_start
         info['End Time'] = t_stop
-        info_str = "\t".join(f"{k}: {v}" for k, v in list(info.items())[:4])
+        info_str = "\t".join(f"{k}: {info[k]}" for k in info_keys[:4])
         print(info_str)
 
         params_opt, params_cov, param_warning = ila.approx(method, time_subset, mag_subset, maxfev=MAXFEV)
@@ -140,7 +159,7 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
                 continue
 
         # 1-sigma uncertainties
-        #param_errors = np.sqrt(np.diag(params_cov))
+        param_errors = np.sqrt(np.diag(params_cov))
         
         [time_of_extremum, 
          time_extr_sig, 
@@ -155,10 +174,13 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
         
         t_array, y_array_fit, y_array_fit_at_points = utils.generate_curve(method, params_opt, time_subset)
         C4 = params_opt[3]
+        C4_err = param_errors[3]
         if len(params_opt) > 4:
             C5 = params_opt[4]
+            C5_err = param_errors[4]
         else:
             C5 = None
+            C5_err = None
 
         sigma = np.sqrt(np.sum((mag_subset - y_array_fit_at_points)**2) / (len(mag_subset) - len(params_opt)))
         
@@ -167,6 +189,10 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
         info['TOM Uncertainty'] = time_extr_sig
         info['Magnitude'] = mag_of_extremum
         info['Magnitude Uncertainty'] = mag_extr_sig
+        info['C4'] = C4
+        info['C4 Uncertainty'] = C4_err
+        info['C5'] = C5
+        info['C5 Uncertainty'] = C5_err
         info['Eclipse Duration'] = eclipse_duration
         info['Eclipse Duration Uncertainty'] = eclipse_sig
         
@@ -182,19 +208,22 @@ def process_data(data_file_name, method, inverseY, range_file_name, result_file_
         else:
             info['Method'] = method
             
-        info_str = "\t".join(str(v) for v in list(info.values())[:-2])
-        info_str2 = " | ".join(f"{k}: {v}" for k, v in list(info.items())[:-2])
+        info_str = "\t".join(str(info[k]) for k in info_keys[:-2])
+        info_str2 = " | ".join(f"{k}: {info[k]}" for k in info_keys[:-2])
         if method == "WSL":
-            info_str += "\t" + str(list(info.values())[-2])
-            info_str += "\t" + str(list(info.values())[-1])
-            info_str2 += " | " + f"{list(info.keys())[-2]}: {str(list(info.values())[-2])}"
-            info_str2 += " | " + f"{list(info.keys())[-1]}: {str(list(info.values())[-1])}"
+            info_str += "\t" + str(info[info_keys[-2]])
+            info_str += "\t" + str(info[info_keys[-1]])
+            info_str2 += " | " + f"{info_keys[-2]}: {str(info[info_keys[-2]])}"
+            info_str2 += " | " + f"{info_keys[-1]}: {str(info[info_keys[-1]])}"
         with open(result_file_name, "a") as f:            
             f.write(info_str + "\n")
             f.flush()
 
         if range_file_name is None:
             # One-extremum mode
+            print('-' * 80)
+            info_list2 = info_str2.split(" | ")
+            for i in range(4, len(info_list2)): print(info_list2[i])
             utils.plot_result(time_subset, mag_subset, 
                               t_array, y_array_fit, 
                               C4, C5, 
@@ -238,6 +267,11 @@ def main():
 
 if __name__ == "__main__":
     if DEBUG:
+        import scipy
+        import numpy
+        print("Executable: ", sys.executable)
+        print("scipy.__version__: ", scipy.__version__)
+        print("numpy.__version__", numpy.__version__)
         main()
     else:    
         try:
