@@ -3,7 +3,7 @@ import argparse
 import io
 import base64
 import numpy as np
-import ila
+from . import ila
 
 def printWarning(msg):
     print(Fore.LIGHTRED_EX + Back.LIGHTYELLOW_EX + msg + Fore.RESET + Back.RESET)

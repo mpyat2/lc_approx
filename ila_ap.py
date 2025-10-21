@@ -26,9 +26,8 @@ import sys
 from colorama import init as colorama_init
 import numpy as np
 import pandas as pd
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'code'))
-import utils
-import ila
+from ila_code import utils
+from ila_code import ila
 
 colorama_init()
 
