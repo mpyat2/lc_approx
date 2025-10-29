@@ -227,6 +227,8 @@ def process_data(data_file_name, method, inverseY, showPlot, range_file_name, re
             print('-' * 80)
             info_list2 = info_str2.split(" | ")
             for i in range(4, len(info_list2)): print(info_list2[i])
+            print('-' * 80)
+            for i in range(0, len(params_opt)): print(f"C{i+1}:\t{params_opt[i]}\t +/- {param_errors[i]}")
             if showPlot:
                 utils.plot_result(time_subset, mag_subset, 
                                   t_array, y_array_fit, 

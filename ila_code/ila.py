@@ -92,12 +92,13 @@ def approx(method, t_obs, m_obs, maxfev=12000):
     C4 = t_min + (t_max - t_min) / 3.0
     C5 = t_max - (t_max - t_min) / 3.0
     
-    if method == "AP" or method == "WSAP":
+    if method == "AP" or method == "WSAP" or method == "WSL":
         if method == "AP":
             func = f_AP_a
-        else:
+        elif method == "WSAP":
             func = f_WSAP_a
-            
+        else:            
+            func = f_WSL_a
         params_opt, params_cov = curve_fit(func, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
                                            maxfev=maxfev, 
                                            #ftol=FTOL, xtol=XTOL, gtol=GTOL
@@ -106,22 +107,16 @@ def approx(method, t_obs, m_obs, maxfev=12000):
         #print(params_opt)
         C1, C2, C3, C4, C5 = params_opt
         if C4 < t_min or C4 > t_max or C5 < t_min or C5 > t_max:
-            param_warning = "Bad C4 or C5 or both. Trying again using the previous values as the starting point."
-            params_opt, params_cov = curve_fit(func, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                               maxfev=maxfev, 
-                                               #ftol=FTOL, xtol=XTOL, gtol=GTOL
-                                               )
-            #print(params_cov)
-            if C4 < t_min or C4 > t_max or C5 < t_min or C5 > t_max:
-                param_warning = "Second run: Bad C4 or C5 or both. Try another method."
+            param_warning = "Bad C4 or C5 or both. Try another method."
+            # param_warning = "Bad C4 or C5 or both. Trying again using the previous values as the starting point."
+            # params_opt, params_cov = curve_fit(func, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
+            #                                    maxfev=maxfev, 
+            #                                    #ftol=FTOL, xtol=XTOL, gtol=GTOL
+            #                                    )
+            # #print(params_cov)
+            # if C4 < t_min or C4 > t_max or C5 < t_min or C5 > t_max:
+            #     param_warning = "Second run: Bad C4 or C5 or both. Try another method."
             
-        params_opt[3] = params_opt[3] + mean_t #C4
-        params_opt[4] = params_opt[4] + mean_t #C5
-    elif method == "WSL":
-        params_opt, params_cov = curve_fit(f_WSL_a, t_obs, m_obs, p0=[C1, C2, C3, C4, C5],
-                                           maxfev=maxfev, 
-                                           #ftol=FTOL, xtol=XTOL, gtol=GTOL
-                                           )
         params_opt[3] = params_opt[3] + mean_t #C4
         params_opt[4] = params_opt[4] + mean_t #C5
     elif method == "A":
