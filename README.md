@@ -17,3 +17,8 @@ See examples (.bat files on Windows and .sh scripts on Linux)
    Use ila_ap.py -h to display help.
 
 2. split_lc.py: an auxiliary script to generate a file with time intervals for the batch mode approximation.
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+![Screenshot1](screenshots/Screenshot1.png)
