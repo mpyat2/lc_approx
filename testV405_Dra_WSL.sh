@@ -1,3 +1,3 @@
 #!/bin/bash
-python3 ila_ap.py test_data/V405_Dra.dat --method=WSAP
+python3 ila_ap.py test_data/V405_Dra.dat --method=WSL
 
